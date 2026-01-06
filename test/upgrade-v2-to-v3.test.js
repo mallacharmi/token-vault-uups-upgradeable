@@ -10,9 +10,10 @@ describe("Upgrade V2 to V3", function () {
   let vaultV3;
   let admin;
   let user;
+  let other;
 
   beforeEach(async function () {
-    [admin, user] = await ethers.getSigners();
+    [admin, user, other] = await ethers.getSigners();
 
     // Deploy Mock ERC20
     const MockERC20 = await ethers.getContractFactory("MockERC20");
@@ -71,19 +72,15 @@ describe("Upgrade V2 to V3", function () {
     await vaultV3.connect(user).requestWithdrawal(ethers.parseEther("50"));
 
     const req = await vaultV3.getWithdrawalRequest(user.address);
-    expect(req[0]).to.equal(ethers.parseEther("50"));
+    expect(req.amount).to.equal(ethers.parseEther("50"));
   });
 
   it("should enforce withdrawal delay", async function () {
     await vaultV3.connect(user).requestWithdrawal(ethers.parseEther("50"));
 
-    let failed = false;
-    try {
-      await vaultV3.connect(user).executeWithdrawal();
-    } catch {
-      failed = true;
-    }
-    expect(failed).to.equal(true);
+    await expect(
+      vaultV3.connect(user).executeWithdrawal()
+    ).to.be.reverted;
   });
 
   it("should allow emergency withdrawals", async function () {
@@ -99,12 +96,46 @@ describe("Upgrade V2 to V3", function () {
   it("should prevent premature withdrawal execution", async function () {
     await vaultV3.connect(user).requestWithdrawal(ethers.parseEther("50"));
 
-    let failed = false;
-    try {
-      await vaultV3.connect(user).executeWithdrawal();
-    } catch {
-      failed = true;
-    }
-    expect(failed).to.equal(true);
+    await expect(
+      vaultV3.connect(user).executeWithdrawal()
+    ).to.be.reverted;
+  });
+
+  /* =======================
+     🔥 ADDITIONAL TESTS
+     (Coverage Boosters)
+     ======================= */
+
+  it("should revert executeWithdrawal if no request exists", async function () {
+    await expect(
+      vaultV3.connect(other).executeWithdrawal()
+    ).to.be.reverted;
+  });
+
+  it("should revert emergencyWithdraw if user has no balance", async function () {
+    await expect(
+      vaultV3.connect(other).emergencyWithdraw()
+    ).to.be.reverted;
+  });
+
+  it("should overwrite previous withdrawal request", async function () {
+    await vaultV3.connect(user).requestWithdrawal(ethers.parseEther("40"));
+    await vaultV3.connect(user).requestWithdrawal(ethers.parseEther("20"));
+
+    const req = await vaultV3.getWithdrawalRequest(user.address);
+    expect(req.amount).to.equal(ethers.parseEther("20"));
+  });
+
+  it("should allow withdrawal execution after delay", async function () {
+    await vaultV3.connect(user).requestWithdrawal(ethers.parseEther("30"));
+
+    await ethers.provider.send("evm_increaseTime", [7 * 24 * 60 * 60]);
+    await ethers.provider.send("evm_mine");
+
+    const before = await token.balanceOf(user.address);
+    await vaultV3.connect(user).executeWithdrawal();
+    const after = await token.balanceOf(user.address);
+
+    expect(after).to.be.gt(before);
   });
 });

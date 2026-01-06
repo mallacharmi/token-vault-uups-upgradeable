@@ -6,10 +6,12 @@
     "test": "npx hardhat test"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
     "@openzeppelin/contracts": "^5.4.0",
     "@openzeppelin/contracts-upgradeable": "^5.4.0",
     "@openzeppelin/hardhat-upgrades": "^3.9.1",
-    "chai": "^6.2.2",
-    "ethers": "^6.16.0"
+    "chai": "^4.3.10",
+    "ethers": "^6.16.0",
+    "solidity-coverage": "^0.8.17"
   }
 }

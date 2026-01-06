@@ -9,9 +9,10 @@ describe("Upgrade V1 to V2", function () {
   let vaultV2;
   let admin;
   let user;
+  let other;
 
   beforeEach(async function () {
-    [admin, user] = await ethers.getSigners();
+    [admin, user, other] = await ethers.getSigners();
 
     // Deploy mock token
     const MockERC20 = await ethers.getContractFactory("MockERC20");
@@ -76,17 +77,47 @@ describe("Upgrade V1 to V2", function () {
   });
 
   it("should prevent non-admin from setting yield rate", async function () {
-    let failed = false;
-    try {
-      await vaultV2.connect(user).setYieldRate(200);
-    } catch {
-      failed = true;
-    }
-    expect(failed).to.equal(true);
+    await expect(
+      vaultV2.connect(user).setYieldRate(200)
+    ).to.be.reverted;
   });
 
   it("should allow pausing deposits in V2", async function () {
     await vaultV2.connect(admin).pauseDeposits();
     expect(await vaultV2.isDepositsPaused()).to.equal(true);
+  });
+
+  /* =======================
+     🔥 COVERAGE BOOST TESTS
+     ======================= */
+
+  it("should revert deposit when deposits are paused", async function () {
+    await vaultV2.connect(admin).pauseDeposits();
+
+    await expect(
+      vaultV2.connect(user).deposit(ethers.parseEther("10"))
+    ).to.be.revertedWith("Deposits paused");
+  });
+
+  it("should allow deposit after unpausing deposits", async function () {
+    await vaultV2.connect(admin).pauseDeposits();
+    await vaultV2.connect(admin).unpauseDeposits();
+
+    await vaultV2.connect(user).deposit(ethers.parseEther("10"));
+
+    expect(await vaultV2.balanceOf(user.address)).to.be.gt(
+      ethers.parseEther("95")
+    );
+  });
+
+  it("should return zero yield for user with no balance", async function () {
+    const yieldValue = await vaultV2.getUserYield(other.address);
+    expect(yieldValue).to.equal(0n);
+  });
+
+  it("should revert claimYield when user has no yield", async function () {
+    await expect(
+      vaultV2.connect(other).claimYield()
+    ).to.be.revertedWith("No yield available");
   });
 });
