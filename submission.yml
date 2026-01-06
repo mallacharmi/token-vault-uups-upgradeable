@@ -1,0 +1,23 @@
+name: TokenVault UUPS Upgradeable Smart Contract System
+author: Malla Charmi
+domain: Blockchain
+difficulty: Hard
+language: Solidity
+framework: Hardhat
+upgrade_pattern: UUPS
+contracts:
+  - TokenVaultV1
+  - TokenVaultV2
+  - TokenVaultV3
+features:
+  - Upgradeable Smart Contracts
+  - UUPS Proxy Pattern
+  - Role-Based Access Control
+  - Secure Initializers
+  - Storage Gap Management
+  - Yield Generation
+  - Withdrawal Delay
+  - Emergency Withdrawals
+tests: All required tests implemented and passing
+deployment: Deployment and upgrades automated using Hardhat scripts
+status: Completed

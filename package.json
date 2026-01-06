@@ -1,0 +1,15 @@
+{
+  "name": "token-vault-uups",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "npx hardhat test"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
+    "@openzeppelin/contracts-upgradeable": "^5.4.0",
+    "@openzeppelin/hardhat-upgrades": "^3.9.1",
+    "chai": "^6.2.2",
+    "ethers": "^6.16.0"
+  }
+}
